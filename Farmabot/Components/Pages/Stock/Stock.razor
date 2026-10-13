@@ -1,0 +1,33 @@
+@page "/stock"
+@rendermode InteractiveServer
+
+<PageTitle>Stock | Farmabot</PageTitle>
+
+<h1 class="mb-2">Stock</h1>
+<p class="text-secondary">Consulta de medicamentos y registro de movimientos de existencias.</p>
+
+<ul class="nav nav-tabs mt-4" aria-label="Pestañas de stock">
+    <li class="nav-item">
+        <button type="button" class="@ClasePestana(0)" @onclick="() => pestanaActiva = 0">Medicamentos</button>
+    </li>
+    <li class="nav-item">
+        <button type="button" class="@ClasePestana(1)" @onclick="() => pestanaActiva = 1">Movimientos de stock</button>
+    </li>
+</ul>
+<div class="card rounded-top-0 border-top-0">
+    <div class="card-body">
+        @if (pestanaActiva == 0)
+        {
+            <Medicamentos />
+        }
+        else
+        {
+            <MovimientosStock />
+        }
+    </div>
+</div>
+
+@code {
+    private int pestanaActiva = 0;
+    private string ClasePestana(int indice) => pestanaActiva == indice ? "nav-link active" : "nav-link";
+}

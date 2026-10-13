@@ -1,0 +1,49 @@
+@page "/"
+
+<PageTitle>Dashboard | Farmabot</PageTitle>
+
+<h1 class="mb-2">Dashboard</h1>
+<p class="text-secondary">Panel principal del sistema de gestión de farmacia.</p>
+
+<div class="row g-3 mt-1">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="h5">Lotes y vencimientos</h2>
+                <p class="text-secondary">Consultar lotes y sus fechas de vencimiento.</p>
+                <a class="stretched-link" href="lotes-vencimientos">Abrir sección</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="h5">Stock</h2>
+                <p class="text-secondary">Consultar medicamentos y movimientos de existencias.</p>
+                <a class="stretched-link" href="stock">Abrir sección</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="h5">Ventas</h2>
+                <p class="text-secondary">Registrar operaciones y consultar el historial.</p>
+                <a class="stretched-link" href="ventas">Abrir sección</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="h5">Configuración</h2>
+                <p class="text-secondary">Administrar usuarios, clientes y categorías.</p>
+                <a class="stretched-link" href="configuracion">Abrir sección</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info mt-4" role="status">
+    El dashboard está preparado. Los indicadores reales se incorporarán cuando conectemos las consultas a FarmaciaDB.
+</div>

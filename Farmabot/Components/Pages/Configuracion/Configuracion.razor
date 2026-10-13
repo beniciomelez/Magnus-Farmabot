@@ -1,0 +1,40 @@
+@page "/configuracion"
+@rendermode InteractiveServer
+
+<PageTitle>Configuración | Farmabot</PageTitle>
+
+<h1 class="mb-2">Configuración</h1>
+<p class="text-secondary">Administración de usuarios, clientes y categorías de medicamentos.</p>
+
+<ul class="nav nav-tabs mt-4" aria-label="Pestañas de configuración">
+    <li class="nav-item">
+        <button type="button" class="@ClasePestana(0)" @onclick="() => pestanaActiva = 0">Usuarios</button>
+    </li>
+    <li class="nav-item">
+        <button type="button" class="@ClasePestana(1)" @onclick="() => pestanaActiva = 1">Clientes</button>
+    </li>
+    <li class="nav-item">
+        <button type="button" class="@ClasePestana(2)" @onclick="() => pestanaActiva = 2">Categorías</button>
+    </li>
+</ul>
+<div class="card rounded-top-0 border-top-0">
+    <div class="card-body">
+        @if (pestanaActiva == 0)
+        {
+            <Usuarios />
+        }
+        else if (pestanaActiva == 1)
+        {
+            <Clientes />
+        }
+        else
+        {
+            <Categorias />
+        }
+    </div>
+</div>
+
+@code {
+    private int pestanaActiva = 0;
+    private string ClasePestana(int indice) => pestanaActiva == indice ? "nav-link active" : "nav-link";
+}
