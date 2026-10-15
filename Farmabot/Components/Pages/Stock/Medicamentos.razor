@@ -153,13 +153,14 @@ else
     private bool cargando = true;
     private string? error;
 
+   
     protected override async Task OnInitializedAsync()
     {
         try
         {
             medicamentos = await Servicio.ObtenerTodosAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             error = ex.Message;
             Console.WriteLine(ex.ToString());
@@ -169,6 +170,7 @@ else
             cargando = false;
         }
     }
+
 
    
     private bool mostrarFormulario = false;
