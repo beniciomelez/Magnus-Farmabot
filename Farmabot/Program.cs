@@ -1,6 +1,16 @@
 using Farmabot.Components;
+using Microsoft.EntityFrameworkCore;
+using Farmabot.Data;
+using Farmabot.Services;
+
+
+
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddDbContext<Farmabot.Data.ConexionBD>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("FarmaciaDB")));
+builder.Services.AddScoped<MedicamentoService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
