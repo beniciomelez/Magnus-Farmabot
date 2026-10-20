@@ -3,11 +3,11 @@
 @using Farmabot.Services
 @inject MedicamentoService Servicio
 
-<h2 class="h5">Medicamentos</h2>
+<h2 class="h5 mb-3">Gestión de medicamentos</h2>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <p class="text-secondary mb-0">
-        Gestión de medicamentos, precios, presentaciones y disponibilidad.
+        Administrá medicamentos, categorías, precios y estados.
     </p>
 
     <button class="btn btn-primary" @onclick="AbrirFormulario">
@@ -15,63 +15,92 @@
     </button>
 </div>
 
+@if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger" role="alert">@error</div>
+}
+
 @if (mostrarFormulario)
 {
     <div class="modal-backdrop-custom">
         <div class="modal-custom">
-            <h3 class="h5 mb-3">Nuevo medicamento</h3>
+            <h3 class="h5 mb-3">
+                @(editando ? "Editar medicamento" : "Nuevo medicamento")
+            </h3>
 
-            
-            <EditForm Model="nuevoMedicamento" OnValidSubmit="GuardarMedicamento">
+            <EditForm Model="formulario" OnValidSubmit="GuardarMedicamento">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
 
                 <div class="mb-3">
                     <label class="form-label">Nombre</label>
                     <InputText class="form-control"
-                               @bind-Value="nuevoMedicamento.Nombre" />
+                               @bind-Value="formulario.Nombre" />
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Descripción</label>
                     <InputText class="form-control"
-                               @bind-Value="nuevoMedicamento.Descripcion" />
+                               @bind-Value="formulario.Descripcion" />
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Principio activo</label>
                     <InputText class="form-control"
-                               @bind-Value="nuevoMedicamento.PrincipioActivo" />
+                               @bind-Value="formulario.PrincipioActivo" />
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Concentración</label>
                     <InputText class="form-control"
-                               @bind-Value="nuevoMedicamento.Concentracion" />
+                               @bind-Value="formulario.Concentracion" />
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Presentación</label>
                     <InputText class="form-control"
-                               @bind-Value="nuevoMedicamento.Presentacion" />
+                               @bind-Value="formulario.Presentacion" />
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Laboratorio</label>
                     <InputText class="form-control"
-                               @bind-Value="nuevoMedicamento.Laboratorio" />
+                               @bind-Value="formulario.Laboratorio" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Categoría</label>
+                    <InputSelect class="form-select"
+                                 @bind-Value="formulario.IdCategoria">
+                        <option value="0">Seleccionar categoría</option>
+                        @foreach (var categoria in categorias)
+                        {
+                            <option value="@categoria.IdCategoria">
+                                @categoria.Nombre
+                            </option>
+                        }
+                    </InputSelect>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Precio de venta</label>
                     <InputNumber class="form-control"
-                                 @bind-Value="nuevoMedicamento.PrecioVenta" />
+                                 @bind-Value="formulario.PrecioVenta" />
                 </div>
 
                 <div class="form-check mb-3">
                     <InputCheckbox class="form-check-input"
-                                   @bind-Value="nuevoMedicamento.RequiereReceta" />
+                                   @bind-Value="formulario.RequiereReceta" />
                     <label class="form-check-label">Requiere receta</label>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Estado</label>
+                    <InputSelect class="form-select"
+                                 @bind-Value="formulario.Activo">
+                        <option value="true">Activo</option>
+                        <option value="false">Inactivo</option>
+                    </InputSelect>
                 </div>
 
                 <div class="d-flex justify-content-end gap-2">
@@ -81,89 +110,117 @@
                     </button>
 
                     <button type="submit" class="btn btn-primary">
-                        Guardar medicamento
+                        @(editando ? "Guardar cambios" : "Guardar medicamento")
                     </button>
                 </div>
             </EditForm>
-
-
-           
         </div>
     </div>
 }
 
-<p class="text-secondary">
-  
-</p>
+<div class="mb-3 d-flex gap-2">
+    <button class="btn @(pestanaActiva == "Activos" ? "btn-primary" : "btn-outline-primary")"
+            @onclick='() => CambiarPestana("Activos")'>
+        Activos
+        <span class="badge bg-light text-dark">
+            @medicamentos.Count(m => m.Activo)
+        </span>
+    </button>
+
+    <button class="btn @(pestanaActiva == "Inactivos" ? "btn-primary" : "btn-outline-primary")"
+            @onclick='() => CambiarPestana("Inactivos")'>
+        Inactivos
+        <span class="badge bg-light text-dark">
+            @medicamentos.Count(m => !m.Activo)
+        </span>
+    </button>
+</div>
 
 @if (cargando)
 {
     <p class="text-secondary">Cargando medicamentos...</p>
 }
-else if (!string.IsNullOrEmpty(error))
-{
-    <div class="alert alert-danger">@error</div>
-}
-else if (medicamentos.Count == 0)
-{
-    <div class="alert alert-info">
-        No hay medicamentos registrados en la base de datos.
-    </div>
-}
 else
 {
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Presentación</th>
-                    <th>Categoría</th>
-                    <th>Precio de venta</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var medicamento in medicamentos)
-                {
+    var listaFiltrada = medicamentos
+        .Where(m => m.Activo == (pestanaActiva == "Activos"))
+        .ToList();
+
+    @if (listaFiltrada.Count == 0)
+    {
+        <div class="alert alert-info">
+            No hay medicamentos en esta pestaña.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
                     <tr>
-                        <td>@medicamento.Nombre</td>
-                        <td>@medicamento.Presentacion</td>
-                        <td>@(medicamento.IdCategoriaNavigation?.Nombre ?? "Sin categoría")</td>
-                        <td>@medicamento.PrecioVenta.ToString("C")</td>
-                        <td>
-                            @if (medicamento.Activo)
-                            {
-                                <span class="badge bg-success">Activo</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-secondary">Inactivo</span>
-                            }
-                        </td>
+                        <th>Nombre</th>
+                        <th>Presentación</th>
+                        <th>Categoría</th>
+                        <th>Precio de venta</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
                     </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                    @foreach (var medicamento in listaFiltrada)
+                    {
+                        <tr>
+                            <td>@medicamento.Nombre</td>
+                            <td>@medicamento.Presentacion</td>
+                            <td>
+                                @(medicamento.IdCategoriaNavigation?.Nombre
+                                    ?? "Sin categoría")
+                            </td>
+                            <td>@medicamento.PrecioVenta.ToString("C")</td>
+                            <td>
+                                @if (medicamento.Activo)
+                                {
+                                    <span class="badge bg-success">Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactivo</span>
+                                }
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary"
+                                        @onclick="() => EditarMedicamento(medicamento)">
+                                    Editar
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 }
 
 @code {
     private List<Medicamento> medicamentos = new();
+    private List<Categoria> categorias = new();
+
+    private Medicamento formulario = new();
     private bool cargando = true;
+    private bool mostrarFormulario;
+    private bool editando;
+    private string pestanaActiva = "Activos";
     private string? error;
 
-   
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            medicamentos = await Servicio.ObtenerTodosAsync();
+            await RecargarDatos();
         }
         catch (Exception ex)
         {
-            error = ex.Message;
-            Console.WriteLine(ex.ToString());
+            error = "No se pudieron cargar los datos: " + ex.Message;
         }
         finally
         {
@@ -171,41 +228,93 @@ else
         }
     }
 
+    private async Task RecargarDatos()
+    {
+        medicamentos = await Servicio.ObtenerTodosAsync();
+        categorias = await Servicio.ObtenerCategoriasAsync();
+    }
 
-   
-    private bool mostrarFormulario = false;
+    private void CambiarPestana(string pestana)
+    {
+        pestanaActiva = pestana;
+    }
 
     private void AbrirFormulario()
     {
+        formulario = new Medicamento
+        {
+            Activo = true
+        };
+
+        editando = false;
+        error = null;
+        mostrarFormulario = true;
+    }
+
+    private void EditarMedicamento(Medicamento medicamento)
+    {
+        formulario = new Medicamento
+        {
+            IdMedicamento = medicamento.IdMedicamento,
+            Nombre = medicamento.Nombre,
+            Descripcion = medicamento.Descripcion,
+            PrincipioActivo = medicamento.PrincipioActivo,
+            Concentracion = medicamento.Concentracion,
+            Presentacion = medicamento.Presentacion,
+            Laboratorio = medicamento.Laboratorio,
+            IdCategoria = medicamento.IdCategoria,
+            PrecioVenta = medicamento.PrecioVenta,
+            RequiereReceta = medicamento.RequiereReceta,
+            Activo = medicamento.Activo
+        };
+
+        editando = true;
+        error = null;
         mostrarFormulario = true;
     }
 
     private void CerrarFormulario()
     {
         mostrarFormulario = false;
+        formulario = new Medicamento();
     }
-
-    private Medicamento nuevoMedicamento = new();
 
     private async Task GuardarMedicamento()
     {
         try
         {
-            await Servicio.AgregarAsync(nuevoMedicamento);
+            if (formulario.IdCategoria <= 0 ||
+                !categorias.Any(c => c.IdCategoria == formulario.IdCategoria))
+            {
+                error = "Seleccioná una categoría válida.";
+                return;
+            }
 
-            medicamentos = await Servicio.ObtenerTodosAsync();
+            if (formulario.PrecioVenta < 0)
+            {
+                error = "El precio no puede ser negativo.";
+                return;
+            }
 
-            nuevoMedicamento = new Medicamento();
+            if (editando)
+            {
+                await Servicio.ActualizarAsync(formulario);
+            }
+            else
+            {
+                await Servicio.AgregarAsync(formulario);
+            }
+
+            await RecargarDatos();
+
+            pestanaActiva = formulario.Activo ? "Activos" : "Inactivos";
+
             CerrarFormulario();
-
             error = null;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            error = "No se pudo guardar el medicamento. Verificá los datos ingresados.";
+            error = "No se pudo guardar el medicamento: " + ex.Message;
         }
     }
-
 }
-
-

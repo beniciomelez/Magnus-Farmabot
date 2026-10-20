@@ -1,8 +1,96 @@
+
+@using Farmabot.Models
+@using Farmabot.Services
+@inject MovimientoStockService Servicio
+
 <h2 class="h5">Movimientos de stock</h2>
-<p class="text-secondary">Aquí se visualizarán las entradas y salidas de los lotes, con el usuario que registró cada movimiento.</p>
-<div class="table-responsive">
-    <table class="table table-hover align-middle">
-        <thead><tr><th>Fecha</th><th>Lote</th><th>Tipo</th><th>Cantidad</th><th>Usuario</th><th>Motivo</th></tr></thead>
-        <tbody><tr><td colspan="6" class="text-center text-secondary py-4">Vista preparada para conectar con la tabla movimientos_stock.</td></tr></tbody>
-    </table>
-</div>
+<p class="text-secondary">
+    Historial de entradas y salidas de medicamentos.
+</p>
+
+@if (cargando)
+{
+    <p class="text-secondary">Cargando movimientos...</p>
+}
+else if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else if (movimientos.Count == 0)
+{
+    <div class="alert alert-info">
+        Todavía no hay movimientos de stock registrados.
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Medicamento</th>
+                    <th>Lote</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                    <th>Usuario</th>
+                    <th>Motivo</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var movimiento in movimientos)
+                {
+                    <tr>
+                        <td>@movimiento.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>
+                            @movimiento.IdLoteNavigation
+                                .IdMedicamentoNavigation.Nombre
+                        </td>
+                        <td>@movimiento.IdLoteNavigation.NumeroLote</td>
+                        <td>
+                            @if (movimiento.Tipo.Equals(
+                                "Entrada", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <span class="badge bg-success">Entrada</span>
+                            }
+                            else if (movimiento.Tipo.Equals(
+                                "Salida", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <span class="badge bg-danger">Salida</span>
+                            }
+                            else
+                            {
+                                @movimiento.Tipo
+                            }
+                        </td>
+                        <td>@movimiento.Cantidad</td>
+                        <td>@movimiento.IdUsuarioNavigation.NombreUsuario</td>
+                        <td>@(movimiento.Motivo ?? "-")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<MovimientosStock> movimientos = new();
+    private bool cargando = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            movimientos = await Servicio.ObtenerTodosAsync();
+        }
+        catch (Exception ex)
+        {
+            error = "No se pudieron cargar los movimientos: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+}

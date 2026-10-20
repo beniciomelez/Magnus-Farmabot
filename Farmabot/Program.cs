@@ -16,6 +16,7 @@ builder.Services.AddScoped<MedicamentoService>();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddScoped<MovimientoStockService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
