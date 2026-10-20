@@ -7,6 +7,7 @@ namespace Farmabot.Services
     public class MedicamentoService
     {
         private readonly ConexionBD _context;
+
         public MedicamentoService(ConexionBD context)
         {
             _context = context;
