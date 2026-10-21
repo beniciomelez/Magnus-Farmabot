@@ -9,8 +9,9 @@ using Farmabot.Services;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<Farmabot.Data.ConexionBD>(options =>
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString("FarmaciaDB")));
+builder.Configuration.GetConnectionString("FarmaciaDB")));
 builder.Services.AddScoped<MedicamentoService>();
+builder.Services.AddScoped<StockService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

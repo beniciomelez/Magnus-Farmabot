@@ -1,5 +1,8 @@
 @page "/stock"
 @rendermode InteractiveServer
+@using Farmabot.Models
+@using Farmabot.Services
+@inject StockService ServicioStock
 
 <PageTitle>Stock | Farmabot</PageTitle>
 
@@ -8,26 +11,122 @@
 
 <ul class="nav nav-tabs mt-4" aria-label="Pestañas de stock">
     <li class="nav-item">
-        <button type="button" class="@ClasePestana(0)" @onclick="() => pestanaActiva = 0">Medicamentos</button>
+        <button type="button"
+                class="@ClasePestana(0)"
+                @onclick="() => pestanaActiva = 0">
+            Medicamentos
+        </button>
     </li>
     <li class="nav-item">
-        <button type="button" class="@ClasePestana(1)" @onclick="() => pestanaActiva = 1">Movimientos de stock</button>
+        <button type="button"
+                class="@ClasePestana(1)"
+                @onclick="() => pestanaActiva = 1">
+            Movimientos de stock
+        </button>
+    </li>
+    <li class="nav-item">
+        <button type="button"
+                class="@ClasePestana(2)"
+                @onclick="() => pestanaActiva = 2">
+            Stock actual
+        </button>
     </li>
 </ul>
+
 <div class="card rounded-top-0 border-top-0">
     <div class="card-body">
-        @if (pestanaActiva == 0)
-        {
-            <Medicamentos />
-        }
-        else
-        {
-            <MovimientosStock />
-        }
+       @if (pestanaActiva == 0)
+{
+    <Medicamentos />
+}
+else if (pestanaActiva == 1)
+{
+    <MovimientosStock />
+}
+else
+{
+     @if (cargandoStock)
+    {
+        <p>Cargando stock...</p>
+    }
+    else if (!string.IsNullOrEmpty(errorStock))
+    {
+        <div class="alert alert-danger">@errorStock</div>
+    }
+    else if (lotes.Count == 0)
+    {
+        <div class="alert alert-info">
+            No hay lotes registrados en la base de datos.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Medicamento</th>
+                        <th>Categoría</th>
+                        <th>N.º de lote</th>
+                        <th>Vencimiento</th>
+                        <th>Stock disponible</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var lote in lotes)
+                    {
+                        <tr>
+                            <td>@lote.IdMedicamentoNavigation.Nombre</td>
+                            <td>
+                                @(lote.IdMedicamentoNavigation.IdCategoriaNavigation?.Nombre
+                                    ?? "Sin categoría")
+                            </td>
+                            <td>@lote.NumeroLote</td>
+                            <td>@lote.FechaVencimiento.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                <span class="badge @(lote.Stock <= 0 ? "bg-danger" : lote.Stock <= 10 ? "bg-warning text-dark" : "bg-success")">
+                                    @lote.Stock unidades
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
     </div>
 </div>
 
 @code {
     private int pestanaActiva = 0;
     private string ClasePestana(int indice) => pestanaActiva == indice ? "nav-link active" : "nav-link";
+
+private List<LotesMedicamento> lotes = new();
+private bool cargandoStock = true;
+private string? errorStock;
+
+protected override async Task OnInitializedAsync()
+{
+    await CargarStock();
+}
+
+private async Task CargarStock()
+{
+    cargandoStock = true;
+    errorStock = null;
+
+    try
+    {
+        lotes = await ServicioStock.ObtenerLotesAsync();
+    }
+    catch (Exception ex)
+    {
+        errorStock = "No se pudo cargar el stock: " + ex.Message;
+    }
+    finally
+    {
+        cargandoStock = false;
+    }
+}
 }

@@ -14,15 +14,15 @@ namespace Farmabot.Services
             _context = context;
         }
 
-        public async Task<List<MovimientosStock>> ObtenerTodosAsync()
+        public async Task<List<Farmabot.Models.MovimientosStock>> ObtenerTodosAsync()
         {
             return await _context.MovimientosStocks
-                .Include(m => m.IdLoteNavigation)
-                    .ThenInclude(l => l.IdMedicamentoNavigation)
-                .Include(m => m.IdUsuarioNavigation)
-                .AsNoTracking()
-                .OrderByDescending(m => m.Fecha)
-                .ToListAsync();
+       .Include(m => m.IdLoteNavigation)
+           .ThenInclude(l => l.IdMedicamentoNavigation)
+       .Include(m => m.IdUsuarioNavigation)
+       .AsNoTracking()
+       .OrderByDescending(m => m.Fecha)
+       .ToListAsync()
         }
     }
 }
