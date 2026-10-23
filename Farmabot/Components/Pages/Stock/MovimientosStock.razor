@@ -1,9 +1,84 @@
 
 @using Farmabot.Models
 @using Farmabot.Services
+@using Farmabot.Data
+@using Microsoft.EntityFrameworkCore
+@using System.ComponentModel.DataAnnotations
+@inject IDbContextFactory<ConexionBD> Factory
 @inject MovimientoStockService Servicio
 
+<div class="card mb-4">
+    <div class="card-body">
+        <h3 class="h6 mb-3">Registrar movimiento</h3>
+
+        @if (!string.IsNullOrWhiteSpace(mensajeFormulario))
+        {
+            <div class="alert @(registroCorrecto ? "alert-success" : "alert-danger")">
+                @mensajeFormulario
+            </div>
+        }
+
+        <EditForm Model="@nuevoMovimiento"
+                  OnValidSubmit="@RegistrarMovimiento">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Medicamento</label>
+                    <InputSelect class="form-select"
+                                 @bind-Value="nuevoMovimiento.IdMedicamento"
+                                 disabled="@guardando">
+                        <option value="0">Seleccionar medicamento</option>
+                        @foreach (var medicamento in medicamentosDisponibles)
+                        {
+                            <option value="@medicamento.IdMedicamento">
+                                @medicamento.Nombre
+                            </option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => nuevoMovimiento.IdMedicamento)" />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Tipo de movimiento</label>
+                    <InputSelect class="form-select"
+                                 @bind-Value="nuevoMovimiento.Tipo"
+                                 disabled="@guardando">
+                        <option value="Entrada">Entrada</option>
+                        <option value="Salida">Salida</option>
+                    </InputSelect>
+                    <ValidationMessage For="@(() => nuevoMovimiento.Tipo)" />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Cantidad</label>
+                    <InputNumber class="form-control"
+                                 @bind-Value="nuevoMovimiento.Cantidad"
+                                 disabled="@guardando" />
+                    <ValidationMessage For="@(() => nuevoMovimiento.Cantidad)" />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Motivo</label>
+                    <InputText class="form-control"
+                               @bind-Value="nuevoMovimiento.Motivo"
+                               placeholder="Ej. Reposición"
+                               disabled="@guardando" />
+                </div>
+            </div>
+
+            <button type="submit"
+                    class="btn btn-primary mt-3"
+                    disabled="@guardando">
+                @(guardando ? "Guardando..." : "Registrar movimiento")
+            </button>
+        </EditForm>
+    </div>
+</div>
+
 <h2 class="h5">Movimientos de stock</h2>
+
 <p class="text-secondary">
     Historial de entradas y salidas de medicamentos.
 </p>
@@ -24,73 +99,181 @@ else if (movimientos.Count == 0)
 }
 else
 {
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead>
+    
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+            <tr>
+                <th class="text-nowrap">Fecha</th>
+                <th>Medicamento</th>
+                <th>Lote</th>
+                <th class="text-center">Tipo</th>
+                <th class="text-center">Cantidad</th>
+                <th>Usuario</th>
+                <th>Motivo</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var movimiento in movimientos)
+            {
                 <tr>
-                    <th>Fecha</th>
-                    <th>Medicamento</th>
-                    <th>Lote</th>
-                    <th>Tipo</th>
-                    <th>Cantidad</th>
-                    <th>Usuario</th>
-                    <th>Motivo</th>
+                    <td class="text-nowrap text-secondary">
+                        @movimiento.Fecha.ToString("dd/MM/yyyy HH:mm")
+                    </td>
+
+                    <td class="fw-semibold">
+                        @(movimiento.IdLoteNavigation?.IdMedicamentoNavigation?.Nombre ?? "Sin medicamento")
+                    </td>
+
+                    <td>
+                        <span class="text-secondary">
+                            @(movimiento.IdLoteNavigation?.NumeroLote ?? "Sin lote")
+                        </span>
+                    </td>
+
+                    <td class="text-center">
+                        @if (movimiento.Tipo.Equals("Entrada", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <span class="badge rounded-pill bg-success-subtle text-success-emphasis px-3 py-2">
+                                <span class="me-1">+</span> Entrada
+                            </span>
+                        }
+                        else if (movimiento.Tipo.Equals("Salida", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <span class="badge rounded-pill bg-danger-subtle text-danger-emphasis px-3 py-2">
+                                <span class="me-1">−</span> Salida
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">@movimiento.Tipo</span>
+                        }
+                    </td>
+
+                    <td class="text-center fw-semibold">
+                        @movimiento.Cantidad
+                    </td>
+
+                    <td class="text-nowrap">
+                        @(movimiento.IdUsuarioNavigation?.Nombre ?? "")
+                        @(movimiento.IdUsuarioNavigation?.Apellido ?? "")
+                    </td>
+
+                    <td>
+                        @(string.IsNullOrWhiteSpace(movimiento.Motivo) ? "-" : movimiento.Motivo)
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                @foreach (var movimiento in movimientos)
-                {
-                    <tr>
-                        <td>@movimiento.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
-                        <td>
-                            @movimiento.IdLoteNavigation
-                                .IdMedicamentoNavigation.Nombre
-                        </td>
-                        <td>@movimiento.IdLoteNavigation.NumeroLote</td>
-                        <td>
-                            @if (movimiento.Tipo.Equals(
-                                "Entrada", StringComparison.OrdinalIgnoreCase))
-                            {
-                                <span class="badge bg-success">Entrada</span>
-                            }
-                            else if (movimiento.Tipo.Equals(
-                                "Salida", StringComparison.OrdinalIgnoreCase))
-                            {
-                                <span class="badge bg-danger">Salida</span>
-                            }
-                            else
-                            {
-                                @movimiento.Tipo
-                            }
-                        </td>
-                        <td>@movimiento.Cantidad</td>
-                        <td>@movimiento.IdUsuarioNavigation.NombreUsuario</td>
-                        <td>@(movimiento.Motivo ?? "-")</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+            }
+        </tbody>
+    </table>
+</div>
+
 }
 
 @code {
-   private List<Farmabot.Models.MovimientosStock> movimientos = new();
+    private List<Farmabot.Models.MovimientosStock> movimientos = new();
+    private List<Medicamento> medicamentosDisponibles = new();
+
     private bool cargando = true;
+    private bool guardando;
+    private bool registroCorrecto;
     private string? error;
+    private string? mensajeFormulario;
+
+    private MovimientoNuevo nuevoMovimiento = new();
+
+    private sealed class MovimientoNuevo
+    {
+        [Range(1, int.MaxValue,
+            ErrorMessage = "Seleccioná un medicamento.")]
+        public int IdMedicamento { get; set; }
+
+        [Required(ErrorMessage = "Seleccioná el tipo de movimiento.")]
+        [RegularExpression("^(Entrada|Salida)$",
+            ErrorMessage = "El tipo debe ser Entrada o Salida.")]
+        public string Tipo { get; set; } = "Entrada";
+
+        [Range(1, int.MaxValue,
+            ErrorMessage = "La cantidad debe ser mayor que cero.")]
+        public int Cantidad { get; set; }
+
+        public string? Motivo { get; set; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            await using var context = await Factory.CreateDbContextAsync();
+
+            medicamentosDisponibles = await context.Medicamentos
+                .AsNoTracking()
+                .Where(m => m.Activo)
+                .OrderBy(m => m.Nombre)
+                .ToListAsync();
+
             movimientos = await Servicio.ObtenerTodosAsync();
         }
         catch (Exception ex)
         {
-            error = "No se pudieron cargar los movimientos: " + ex.Message;
+            error = "No se pudieron cargar los datos: " + ex.Message;
         }
         finally
         {
             cargando = false;
+        }
+    }
+
+    private async Task RegistrarMovimiento()
+    {
+        if (guardando)
+            return;
+
+        guardando = true;
+        mensajeFormulario = null;
+        registroCorrecto = false;
+
+        try
+        {
+            await using var context = await Factory.CreateDbContextAsync();
+
+            var medicamentoActivo = await context.Medicamentos
+                .AnyAsync(m =>
+                    m.IdMedicamento == nuevoMovimiento.IdMedicamento
+                    && m.Activo);
+
+            if (!medicamentoActivo)
+                throw new InvalidOperationException(
+                    "Seleccioná un medicamento activo.");
+
+            var usuario = await context.Usuarios
+                .FirstOrDefaultAsync(u =>
+                    u.Email == "prueba@farmabot.local" && u.Activo);
+
+            if (usuario == null)
+                throw new InvalidOperationException(
+                    "No se encontró el usuario de prueba activo.");
+
+            await Servicio.RegistrarAsync(
+                nuevoMovimiento.IdMedicamento,
+                nuevoMovimiento.Tipo,
+                nuevoMovimiento.Cantidad,
+                usuario.IdUsuario,
+                nuevoMovimiento.Motivo);
+
+            movimientos = await Servicio.ObtenerTodosAsync();
+
+            nuevoMovimiento = new MovimientoNuevo();
+            registroCorrecto = true;
+            mensajeFormulario = "Movimiento registrado correctamente.";
+        }
+        catch (Exception ex)
+        {
+            mensajeFormulario = ex.Message;
+        }
+        finally
+        {
+            guardando = false;
         }
     }
 }

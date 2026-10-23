@@ -7,27 +7,31 @@
 <PageTitle>Stock | Farmabot</PageTitle>
 
 <h1 class="mb-2">Stock</h1>
-<p class="text-secondary">Consulta de medicamentos y registro de movimientos de existencias.</p>
+<p class="text-secondary">
+    Consulta de medicamentos y registro de movimientos de existencias.
+</p>
 
 <ul class="nav nav-tabs mt-4" aria-label="Pestañas de stock">
     <li class="nav-item">
         <button type="button"
                 class="@ClasePestana(0)"
-                @onclick="() => pestanaActiva = 0">
+                @onclick="() => CambiarPestana(0)">
             Medicamentos
         </button>
     </li>
+
     <li class="nav-item">
         <button type="button"
                 class="@ClasePestana(1)"
-                @onclick="() => pestanaActiva = 1">
+                @onclick="() => CambiarPestana(1)">
             Movimientos de stock
         </button>
     </li>
+
     <li class="nav-item">
         <button type="button"
                 class="@ClasePestana(2)"
-                @onclick="() => pestanaActiva = 2">
+                @onclick="() => CambiarPestana(2)">
             Stock actual
         </button>
     </li>
@@ -35,98 +39,130 @@
 
 <div class="card rounded-top-0 border-top-0">
     <div class="card-body">
-       @if (pestanaActiva == 0)
-{
-    <Medicamentos />
-}
-else if (pestanaActiva == 1)
-{
-    <MovimientosStock />
-}
-else
-{
-     @if (cargandoStock)
-    {
-        <p>Cargando stock...</p>
-    }
-    else if (!string.IsNullOrEmpty(errorStock))
-    {
-        <div class="alert alert-danger">@errorStock</div>
-    }
-    else if (lotes.Count == 0)
-    {
-        <div class="alert alert-info">
-            No hay lotes registrados en la base de datos.
-        </div>
-    }
-    else
-    {
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>Medicamento</th>
-                        <th>Categoría</th>
-                        <th>N.º de lote</th>
-                        <th>Vencimiento</th>
-                        <th>Stock disponible</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var lote in lotes)
-                    {
+
+        @if (pestanaActiva == 0)
+        {
+            <Medicamentos />
+        }
+        else if (pestanaActiva == 1)
+        {
+            <MovimientosStock />
+        }
+        else if (cargandoStock)
+        {
+            <p class="text-secondary mb-0">Cargando stock...</p>
+        }
+        else if (!string.IsNullOrEmpty(errorStock))
+        {
+            <div class="alert alert-danger" role="alert">
+                @errorStock
+            </div>
+
+            <button type="button"
+                    class="btn btn-outline-primary"
+                    @onclick="CargarStock">
+                Reintentar
+            </button>
+        }
+        else if (medicamentosConStock.Count == 0)
+        {
+            <div class="alert alert-info mb-0">
+                No hay medicamentos activos registrados.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
                         <tr>
-                            <td>@lote.IdMedicamentoNavigation.Nombre</td>
-                            <td>
-                                @(lote.IdMedicamentoNavigation.IdCategoriaNavigation?.Nombre
-                                    ?? "Sin categoría")
-                            </td>
-                            <td>@lote.NumeroLote</td>
-                            <td>@lote.FechaVencimiento.ToString("dd/MM/yyyy")</td>
-                            <td>
-                                <span class="badge @(lote.Stock <= 0 ? "bg-danger" : lote.Stock <= 10 ? "bg-warning text-dark" : "bg-success")">
-                                    @lote.Stock unidades
-                                </span>
-                            </td>
+                            <th>Medicamento</th>
+                            <th>Categoría</th>
+                            <th class="text-center">Stock disponible</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
-}
+                    </thead>
+
+                    <tbody>
+                        @foreach (var medicamento in medicamentosConStock)
+                        {
+                            var cantidad = medicamento.LotesMedicamentos.Sum(l => l.Stock);
+
+                            <tr>
+                                <td class="fw-semibold">
+                                    @medicamento.Nombre
+                                </td>
+
+                                <td>
+                                    @(medicamento.IdCategoriaNavigation?.Nombre ?? "Sin categoría")
+                                </td>
+
+                                <td class="text-center">
+                                    <span class="badge @(cantidad <= 0
+                                        ? "bg-danger"
+                                        : cantidad <= 10
+                                            ? "bg-warning text-dark"
+                                            : "bg-success")">
+                                        @cantidad unidades
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
     </div>
 </div>
 
 @code {
     private int pestanaActiva = 0;
-    private string ClasePestana(int indice) => pestanaActiva == indice ? "nav-link active" : "nav-link";
 
-private List<LotesMedicamento> lotes = new();
-private bool cargandoStock = true;
-private string? errorStock;
+    private List<Medicamento> medicamentosConStock = new();
 
-protected override async Task OnInitializedAsync()
-{
-    await CargarStock();
-}
+    private bool cargandoStock = false;
 
-private async Task CargarStock()
-{
-    cargandoStock = true;
-    errorStock = null;
+    private string? errorStock;
 
-    try
+    private string ClasePestana(int indice)
     {
-        lotes = await ServicioStock.ObtenerLotesAsync();
+        return pestanaActiva == indice
+            ? "nav-link active"
+            : "nav-link";
     }
-    catch (Exception ex)
+
+    protected override async Task OnInitializedAsync()
     {
-        errorStock = "No se pudo cargar el stock: " + ex.Message;
+        await CargarStock();
     }
-    finally
+
+    private async Task CambiarPestana(int indice)
     {
-        cargandoStock = false;
+        pestanaActiva = indice;
+
+        if (indice == 2)
+        {
+            await CargarStock();
+        }
     }
-}
+
+    private async Task CargarStock()
+    {
+        cargandoStock = true;
+        errorStock = null;
+
+        try
+        {
+            medicamentosConStock =
+                await ServicioStock.ObtenerMedicamentosConStockAsync();
+        }
+        catch (Exception ex)
+        {
+            errorStock = "No se pudo cargar el stock: " + ex.Message;
+        }
+        finally
+        {
+            cargandoStock = false;
+        }
+    }
 }

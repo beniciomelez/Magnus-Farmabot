@@ -1,5 +1,4 @@
-﻿
-using Farmabot.Data;
+﻿using Farmabot.Data;
 using Farmabot.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,16 +6,18 @@ namespace Farmabot.Services
 {
     public class MedicamentoService
     {
-        private readonly ConexionBD _context;
+        private readonly IDbContextFactory<ConexionBD> _factory;
 
-        public MedicamentoService(ConexionBD context)
+        public MedicamentoService(IDbContextFactory<ConexionBD> factory)
         {
-            _context = context;
+            _factory = factory;
         }
 
         public async Task<List<Medicamento>> ObtenerTodosAsync()
         {
-            return await _context.Medicamentos
+            await using var context = await _factory.CreateDbContextAsync();
+
+            return await context.Medicamentos
                 .Include(m => m.IdCategoriaNavigation)
                 .AsNoTracking()
                 .ToListAsync();
@@ -24,14 +25,18 @@ namespace Farmabot.Services
 
         public async Task<Medicamento?> ObtenerPorIdAsync(int id)
         {
-            return await _context.Medicamentos
+            await using var context = await _factory.CreateDbContextAsync();
 
+            return await context.Medicamentos
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.IdMedicamento == id);
         }
 
         public async Task<List<Categoria>> ObtenerCategoriasAsync()
         {
-            return await _context.Categorias
+            await using var context = await _factory.CreateDbContextAsync();
+
+            return await context.Categorias
                 .AsNoTracking()
                 .OrderBy(c => c.Nombre)
                 .ToListAsync();
@@ -39,13 +44,17 @@ namespace Farmabot.Services
 
         public async Task AgregarAsync(Medicamento medicamento)
         {
-            _context.Medicamentos.Add(medicamento);
-            await _context.SaveChangesAsync();
+            await using var context = await _factory.CreateDbContextAsync();
+
+            context.Medicamentos.Add(medicamento);
+            await context.SaveChangesAsync();
         }
 
         public async Task ActualizarAsync(Medicamento medicamento)
         {
-            var existente = await _context.Medicamentos
+            await using var context = await _factory.CreateDbContextAsync();
+
+            var existente = await context.Medicamentos
                 .FirstOrDefaultAsync(
                     m => m.IdMedicamento == medicamento.IdMedicamento);
 
@@ -66,7 +75,7 @@ namespace Farmabot.Services
             existente.RequiereReceta = medicamento.RequiereReceta;
             existente.Activo = medicamento.Activo;
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
     }
 }
